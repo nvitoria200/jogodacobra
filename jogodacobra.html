@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Jogo da Cobra</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            user-select: none;
+        }
+
+        body, html {
+            height: 100%;
+            background: linear-gradient(to bottom, #001033, #000000);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        #coverScreen {
+            position: fixed;
+            inset: 0;
+            background-color: rgba(0,0,0,0.85);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: #0ff;
+            font-size: 1.8rem;
+            z-index: 10;
+            gap: 25px;
+            padding: 20px;
+        }
+
+        #coverScreen img#gameCover {
+            max-width: 320px;
+            width: 100%;
+            border: 3px solid #0ff;
+            border-radius: 12px;
+            box-shadow: 0 0 15px #0ff;
+            user-select: none;
+        }
+
+        #coverScreen button {
+            padding: 12px 30px;
+            font-size: 1.2rem;
+            background-color: #0088ff;
+            border: none;
+            border-radius: 6px;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            font-weight: bold;
+        }
+        #coverScreen button:hover {
+            background-color: #00bbff;
+        }
+
+        #startScreen {
+            position: fixed;
+            inset: 0;
+            background: #001f00; /* verde escuro */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: #0f0;
+            font-size: 2.5rem;
+            text-align: center;
+            z-index: 9;
+            gap: 40px;
+            padding: 20px;
+        }
+
+        #startBtn {
+            background-color: #006600;
+            border: 3px solid #00ff00;
+            color: #00ff00;
+            font-size: 2rem;
+            padding: 15px 40px;
+            cursor: pointer;
+            border-radius: 8px;
+            font-weight: bold;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        #startBtn:hover {
+            background-color: #00bb00;
+            color: #001a00;
+        }
+
+        #gameContainer {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        #gameCanvas {
+            background-color: #004400; /* verde escuro do espaço onde a cobra se move */
+            border: 3px solid #0f0;
+            display: none;
+            image-rendering: pixelated;
+        }
+
+        #infoPanel {
+            margin-top: 10px;
+            color: #0f0;
+            font-size: 1.3rem;
+            display: none;
+            width: 480px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        #pauseBtn {
+            margin-top: 10px;
+            background-color: #008800;
+            border: none;
+            color: #0f0;
+            font-size: 1.1rem;
+            padding: 7px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: none;
+            font-weight: bold;
+        }
+        #pauseBtn:hover {
+            background-color: #00bb00;
+        }
+
+        #gameOverScreen {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.9);
+            color: #ff2200;
+            font-size: 2rem;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            gap: 25px;
+            z-index: 20;
+        }
+
+        #restartBtn {
+            background-color: #ff3300;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 1.3rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.3s ease;
+        }
+        #restartBtn:hover {
+            background-color: #ff5511;
+        }
+
+        /* Mensagem de comemoração */
+        #celebration {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 3rem;
+            color: #0ff;
+            text-shadow: 0 0 10px #0ff, 0 0 20px #0ff;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            z-index: 30;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="coverScreen">
+        <!-- Coloque aqui o caminho da sua capa, trocando o src -->
+        <img id="gameCover" src="capa-do-jogo.png" alt="Capa do Jogo da Cobra" />
+        Bem-vindo ao Jogo da Cobra!
+        <button id="continueBtn">Continuar</button>
+    </div>
+
+    <div id="startScreen">
+        <div>Pressione o botão para começar</div>
+        <button id="startBtn">Começar</button>
+    </div>
+
+    <div id="gameContainer">
+        <canvas id="gameCanvas" width="480" height="480"></canvas>
+        <div id="infoPanel">
+            <div id="score">Pontos: 0</div>
+            <div id="lives">Vidas: 3</div>
+        </div>
+        <button id="pauseBtn">Pausar</button>
+    </div>
+
+    <div id="gameOverScreen">
+        <div>Fim de jogo!</div>
+        <div id="finalScore">Sua pontuação: 0</div>
+        <button id="restartBtn">Reiniciar</button>
+    </div>
+
+    <div id="celebration">🎉 Parabéns! +100 pontos! 🎉</div>
+
+    <!-- Sons -->
+    <audio id="backgroundSound" src="background.mp3" loop></audio>
+    <audio id="eatSound" src="eat.mp3"></audio>
+    <audio id="hitSound" src="hit.mp3"></audio>
+    <audio id="lifeSound" src="celebrate.mp3"></audio>
+    <audio id="celebrateSound" src="celebrate.mp3"></audio>
+
+<script>
+    const coverScreen = document.getElementById('coverScreen');
+    const continueBtn = document.getElementById('continueBtn');
+    const startScreen = document.getElementById('startScreen');
+    const startBtn = document.getElementById('startBtn');
+    const gameContainer = document.getElementById('gameContainer');
+    const gameCanvas = document.getElementById('gameCanvas');
+    const ctx = gameCanvas.getContext('2d');
+    const infoPanel = document.getElementById('infoPanel');
+    const scoreDisplay = document.getElementById('score');
+    const livesDisplay = document.getElementById('lives');
+    const pauseBtn = document.getElementById('pauseBtn');
+    const gameOverScreen = document.getElementById('gameOverScreen');
+    const finalScoreDisplay = document.getElementById('finalScore');
+    const restartBtn = document.getElementById('restartBtn');
+    const celebrationDiv = document.getElementById('celebration');
+
+    // Sons
+    const backgroundSound = document.getElementById('backgroundSound');
+    const eatSound = document.getElementById('eatSound');
+    const hitSound = document.getElementById('hitSound');
+    const lifeSound = document.getElementById('lifeSound');
+    const celebrateSound = document.getElementById('celebrateSound');
+
+    const canvasWidth = gameCanvas.width;
+    const canvasHeight = gameCanvas.height;
+    const blockSize = 20;
+    const maxLives = 3;
+
+    let snake = [];
+    let direction = null;
+    let food = {};
+    let score = 0;
+    let lives = maxLives;
+    let gameInterval = null;
+    let paused = false;
+
+    const lifeGainThreshold = 50;
+    let nextLifeScore = lifeGainThreshold;
+
+    const celebrationScoreStep = 100;
+    let nextCelebrationScore = celebrationScoreStep;
+
+    let lastDirection = null;
+
+    continueBtn.addEventListener('click', () => {
+        coverScreen.style.display = 'none';
+        startScreen.style.display = 'flex';
+    });
+
+    startBtn.addEventListener('click', () => {
+        iniciarJogo();
+    });
+
+    pauseBtn.addEventListener('click', () => {
+        if (paused) {
+            gameInterval = setInterval(loopJogo, 100);
+            pauseBtn.textContent = 'Pausar';
+            backgroundSound.play();
+            paused = false;
+        } else {
+            clearInterval(gameInterval);
+            pauseBtn.textContent = 'Continuar';
+            backgroundSound.pause();
+            paused = true;
+        }
+    });
+
+    restartBtn.addEventListener('click', () => {
+        gameOverScreen.style.display = 'none';
+        startScreen.style.display = 'flex';
+    });
+
+    function iniciarJogo() {
+        startScreen.style.display = 'none';
+        gameCanvas.style.display = 'block';
+        infoPanel.style.display = 'flex';
+        pauseBtn.style.display = 'inline-block';
+        gameOverScreen.style.display = 'none';
+
+        snake = [
+            { x: blockSize * 5, y: blockSize * 5 },
+            { x: blockSize * 4, y: blockSize * 5 },
+            { x: blockSize * 3, y: blockSize * 5 }
+        ];
+        direction = 'right';
+        lastDirection = direction;
+        score = 0;
+        lives = maxLives;
+        paused = false;
+        nextLifeScore = lifeGainThreshold;
+        nextCelebrationScore = celebrationScoreStep;
+        atualizarInfo();
+        gerarComida();
+
+        if (gameInterval) clearInterval(gameInterval);
+        gameInterval = setInterval(loopJogo, 100);
+
+        backgroundSound.volume = 0.3;
+        backgroundSound.play().catch(e => {});
+
+        pauseBtn.textContent = 'Pausar';
+    }
+
+    function gerarComida() {
+        food.x = Math.floor(Math.random() * (canvasWidth / blockSize)) * blockSize;
+        food.y = Math.floor(Math.random() * (canvasHeight / blockSize)) * blockSize;
+
+        while (snake.some(seg => seg.x === food.x && seg.y === food.y)) {
+            food.x = Math.floor(Math.random() * (canvasWidth / blockSize)) * blockSize;
+            food.y = Math.floor(Math.random() * (canvasHeight / blockSize)) * blockSize;
+        }
+    }
+
+    function atualizarInfo() {
+        scoreDisplay.textContent = `Pontos: ${score}`;
+        livesDisplay.textContent = `Vidas: ${lives}`;
+    }
+
+    // Desenha o fundo do canvas com degradê azul para preto + quadro quadriculado verde
+    function desenharFundo() {
+        // Degradê azul para preto (background do canvas)
+        const grad = ctx.createLinearGradient(0, 0, 0, canvasHeight);
+        grad.addColorStop(0, '#001033');
+        grad.addColorStop(1, '#000000');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+
+        // Desenha área verde onde a cobra se move (como uma camada acima)
+        ctx.fillStyle = '#004400';
+        ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+
+        // Desenha o quadriculado verde claro translúcido
+        ctx.strokeStyle = 'rgba(0, 255, 0, 0.15)';
+        ctx.lineWidth = 1;
+
+        for (let x = 0; x <= canvasWidth; x += blockSize) {
+            ctx.beginPath();
+            ctx.moveTo(x, 0);
+            ctx.lineTo(x, canvasHeight);
+            ctx.stroke();
+        }
+        for (let y = 0; y <= canvasHeight; y += blockSize) {
+            ctx.beginPath();
+            ctx.moveTo(0, y);
+            ctx.lineTo(canvasWidth, y);
+            ctx.stroke();
+        }
+    }
+
+    function desenhar() {
+        desenharFundo();
+
+        // Desenha comida
+        ctx.fillStyle = '#FF3300';
+        ctx.beginPath();
+        ctx.arc(food.x + blockSize / 2, food.y + blockSize / 2, blockSize / 2 - 2, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Desenha cobra
+        snake.forEach((segment, index) => {
+            ctx.fillStyle = index === 0 ? '#00FF00' : '#008800';
+            ctx.fillRect(segment.x, segment.y, blockSize, blockSize);
+            ctx.strokeStyle = '#004400';
+            ctx.strokeRect(segment.x, segment.y, blockSize, blockSize);
+        });
+    }
+
+    function verificarColisoes(head) {
+        if (head.x < 0 || head.x >= canvasWidth || head.y < 0 || head.y >= canvasHeight) {
+            return true;
+        }
+        for (let i = 1; i < snake.length; i++) {
+            if (head.x === snake[i].x && head.y === snake[i].y) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    function mostrarCelebracao() {
+        celebrationDiv.style.opacity = '1';
+        celebrateSound.currentTime = 0;
+        celebrateSound.play();
+
+        setTimeout(() => {
+            celebrationDiv.style.opacity = '0';
+        }, 2000);
+    }
+
+    function loopJogo() {
+        if (paused) return;
+
+        const head = snake[0];
+        let newHead = { x: head.x, y: head.y };
+
+        switch (direction) {
+            case 'left': newHead.x -= blockSize; break;
+            case 'right': newHead.x += blockSize; break;
+            case 'up': newHead.y -= blockSize; break;
+            case 'down': newHead.y += blockSize; break;
+        }
+
+        if (verificarColisoes(newHead)) {
+            hitSound.currentTime = 0;
+            hitSound.play();
+
+            lives--;
+            atualizarInfo();
+
+            if (lives === 0) {
+                finalizarJogo();
+                return;
+            } else {
+                snake = [
+                    { x: blockSize * 5, y: blockSize * 5 },
+                    { x: blockSize * 4, y: blockSize * 5 },
+                    { x: blockSize * 3, y: blockSize * 5 }
+                ];
+                direction = 'right';
+                lastDirection = direction;
+                return;
+            }
+        }
+
+        snake.unshift(newHead);
+
+        if (newHead.x === food.x && newHead.y === food.y) {
+            score += 10;
+            eatSound.currentTime = 0;
+            eatSound.play();
+
+            if (score >= nextLifeScore && lives < maxLives) {
+                lives++;
+                lifeSound.currentTime = 0;
+                lifeSound.play();
+                nextLifeScore += lifeGainThreshold;
+                atualizarInfo();
+            } else {
+                atualizarInfo();
+            }
+
+            if (score >= nextCelebrationScore) {
+                mostrarCelebracao();
+                nextCelebrationScore += celebrationScoreStep;
+            }
+
+            gerarComida();
+        } else {
+            snake.pop();
+        }
+
+        desenhar();
+        lastDirection = direction;
+    }
+
+    function finalizarJogo() {
+        clearInterval(gameInterval);
+        gameCanvas.style.display = 'none';
+        infoPanel.style.display = 'none';
+        pauseBtn.style.display = 'none';
+        gameOverScreen.style.display = 'flex';
+        finalScoreDisplay.textContent = `Sua pontuação: ${score}`;
+        backgroundSound.pause();
+    }
+
+    // Controle via teclado
+    window.addEventListener('keydown', (e) => {
+        if (paused) return;
+
+        switch (e.key) {
+            case 'ArrowUp':
+            case 'w':
+            case 'W':
+                if (lastDirection !== 'down') direction = 'up';
+                break;
+            case 'ArrowDown':
+            case 's':
+            case 'S':
+                if (lastDirection !== 'up') direction = 'down';
+                break;
+            case 'ArrowLeft':
+            case 'a':
+            case 'A':
+                if (lastDirection !== 'right') direction = 'left';
+                break;
+            case 'ArrowRight':
+            case 'd':
+            case 'D':
+                if (lastDirection !== 'left') direction = 'right';
+                break;
+            case ' ':
+                pauseBtn.click();
+                break;
+        }
+    });
+</script>
+
+</body>
+</html>
